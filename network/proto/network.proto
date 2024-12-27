@@ -1,0 +1,16 @@
+syntax = "proto3";
+option go_package = "./";
+
+service Network {
+    rpc NodeInit (NodeInitRequest) returns (NodeInitResponse){}
+}
+
+//Send init messages to peers
+message NodeInitRequest {
+    string message = 1;
+}
+
+//Response to init message
+message NodeInitResponse {
+    string result = 1;
+}

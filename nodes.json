@@ -1,0 +1,6 @@
+{
+  "Nodes": {
+    "m1": { "ID": "m1", "Addr": "10.10.1.1", "Status": "offline" },
+    "m2": { "ID": "m2", "Addr": "10.10.1.2", "Status": "offline" }
+  }
+}

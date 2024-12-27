@@ -1,0 +1,16 @@
+syntax = "proto3";
+option go_package = "./";
+
+service Message {
+    rpc MessageMulticast (MessageSharing) returns (MessageResponse){}
+}
+
+//Message to be shared with the neighbours 
+message MessageSharing {
+    string message = 1;
+}
+
+//Response message
+message MessageResponse {
+    string result = 1;
+}

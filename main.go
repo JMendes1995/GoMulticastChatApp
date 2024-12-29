@@ -15,9 +15,8 @@ func main() {
 		Addr:   localAddr,
 		Status: "offline",
 	}
-
-	network.LocalTimeVector.Vector = make(map[string]int)
-	network.LocalTimeVector.LogicalCLock = 0
+	messages.LocalLamportClock.Timestamp = 0
+	messages.LocalMessageQueue.Messages = make(map[int][]messages.MessageData)
 
 	nodesJson, _ := os.ReadFile("nodes.json")
 
@@ -32,14 +31,6 @@ func main() {
 		log.Fatalf("Error in Unmarshalling words list: %s", err)
 	}
 
-	// //fmt.Printf("%v", words.Words)
-
-	// if err != nil {
-	// 	log.Fatal("Error getting local addresses:", err)
-	// 	os.Exit(1)
-	// }
-
-	//go network.ServerMulticastUDP(localAddr)
 	go network.Server()
 	go messages.Server()
 
@@ -47,7 +38,9 @@ func main() {
 		go network.LocalNode.NetworkClient(network.LocalRouteTable.Nodes[id])
 	}
 
-	go messages.LocalMessages.MesageMulticastEventGenerator(words)
-	go messages.LocalMessages.ShowResults()
+	//go messages.LocalMessages.MesageMulticastEventGenerator(words)
+	go messages.LocalMessageQueue.MesageMulticastEventGenerator(words)
+	go messages.LocalMessageReady.ShowResults()
+	//go messages.LocalMessages.ShowResults()
 	select {}
 }

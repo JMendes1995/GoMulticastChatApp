@@ -1,6 +1,11 @@
 {
   "Nodes": {
     "m1": { "ID": "m1", "Addr": "10.10.1.1", "Status": "offline" },
-    "m2": { "ID": "m2", "Addr": "10.10.1.2", "Status": "offline" }
+    "m2": { "ID": "m2", "Addr": "10.10.1.2", "Status": "offline" },
+    "m3": { "ID": "m3", "Addr": "10.10.1.3", "Status": "offline" },
+    "m4": { "ID": "m4", "Addr": "10.10.1.4", "Status": "offline" },
+    "m5": { "ID": "m5", "Addr": "10.10.1.5", "Status": "offline" },
+    "m6": { "ID": "m6", "Addr": "10.10.1.6", "Status": "offline" }
+
   }
 }

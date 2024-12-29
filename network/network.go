@@ -28,12 +28,6 @@ type RoutingTable struct {
 	Mutex sync.Mutex
 }
 
-type TimeVector struct {
-	Vector       map[string]int
-	LogicalCLock int
-	Mutex        sync.Mutex
-}
-
 type NetworkServer struct {
 	ntw.UnimplementedNetworkServer
 }
@@ -41,7 +35,6 @@ type NetworkServer struct {
 const Port = ":50000"
 
 var (
-	LocalTimeVector TimeVector
 	LocalID         = os.Getenv("ID")
 	LocalNode       Node
 	LocalRouteTable RoutingTable
@@ -70,11 +63,6 @@ func (n NetworkServer) NodeInit(ctx context.Context, in *ntw.NodeInitRequest) (*
 	// update the node status to online
 	LocalRouteTable.Nodes[reqNode.ID] = reqNode
 	LocalRouteTable.Mutex.Unlock()
-
-	// update the vector to add the online node to the map
-	LocalTimeVector.Mutex.Lock()
-	LocalTimeVector.Vector[reqNode.Addr] = 0
-	LocalTimeVector.Mutex.Unlock()
 
 	return &ntw.NodeInitResponse{Result: "Node status changed"}, nil
 

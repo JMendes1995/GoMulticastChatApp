@@ -1,8 +1,8 @@
 package network
 
 import (
-	"chatapp/config"
-	ntw "chatapp/network/proto"
+	"GoMulticastChatApp/config"
+	ntw "GoMulticastChatApp/network/proto"
 	"context"
 	"encoding/json"
 	"log"

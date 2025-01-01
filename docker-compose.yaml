@@ -4,62 +4,62 @@ services:
   peer1:
     build: ./
     environment:
-      LOCAL_NODE: 10.10.1.1
+      LOCAL_NODE: 192.168.0.142
       ID: "m1"
     networks:
       vpcbr:
-        ipv4_address: 10.10.1.1
+        ipv4_address: 192.168.0.142
     tty: true
 
   peer2:
     build: ./
     environment:
-      LOCAL_NODE: 10.10.1.2
+      LOCAL_NODE: 192.168.0.143
       ID: "m2"
     networks:
       vpcbr:
-        ipv4_address: 10.10.1.2
+        ipv4_address: 192.168.0.143
     tty: true
   peer3:
     build: ./
     environment:
-      LOCAL_NODE: 10.10.1.3
+      LOCAL_NODE: 192.168.0.144
       ID: "m3"
     networks:
       vpcbr:
-        ipv4_address: 10.10.1.3
+        ipv4_address: 192.168.0.144
     tty: true
   peer4:
     build: ./
     environment:
-      LOCAL_NODE: 10.10.1.4
+      LOCAL_NODE: 192.168.0.145
       ID: "m4"
     networks:
       vpcbr:
-        ipv4_address: 10.10.1.4
+        ipv4_address: 192.168.0.145
     tty: true
   peer5:
     build: ./
     environment:
-      LOCAL_NODE: 10.10.1.5
+      LOCAL_NODE: 192.168.0.146
       ID: "m5"
     networks:
       vpcbr:
-        ipv4_address: 10.10.1.5
+        ipv4_address: 192.168.0.146
     tty: true
   peer6:
     build: ./
     environment:
-      LOCAL_NODE: 10.10.1.6
+      LOCAL_NODE: 192.168.0.147
       ID: "m6"
     networks:
       vpcbr:
-        ipv4_address: 10.10.1.6
+        ipv4_address: 192.168.0.147
     tty: true
 networks:
   vpcbr:
     driver: bridge
     ipam:
       config:
-        - subnet: 10.10.0.0/16
-          gateway: 10.10.0.1
+        - subnet: 192.168.0.0/24
+          gateway: 192.168.0.1

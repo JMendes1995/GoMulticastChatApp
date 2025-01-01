@@ -1,10 +1,10 @@
 package messages
 
 import (
-	"chatapp/config"
-	msg "chatapp/messages/proto"
-	"chatapp/network"
-	"chatapp/poisson"
+	"GoMulticastChatApp/config"
+	msg "GoMulticastChatApp/messages/proto"
+	"GoMulticastChatApp/network"
+	"GoMulticastChatApp/poisson"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -58,17 +58,14 @@ var (
 // Grpc function to process the message shared from other nodes.
 func (m MessageServer) MessageMulticast(ctx context.Context, in *msg.MessageSharing) (*msg.MessageResponse, error) {
 	reqMessage := MessageJsonUnmarshal(in.GetMessage())
-	fmt.Printf("Recived message with index:%d sender:%s data:%s\n", reqMessage.Timestamp, reqMessage.Sender, reqMessage.Data)
-
-	// check if the message is a bleat
-	//LocalLamportClock.Mutex.Lock()
+	log.Printf(config.Yellow+"Recived message with Timestamp:%d Address:%s Data:%s\n"+config.Reset, reqMessage.Timestamp, reqMessage.Sender, reqMessage.Data)
 
 	if !slices.Contains((LocalLamportClock.TimestampList), reqMessage.Timestamp) {
 		LocalLamportClock.TimestampList = append(LocalLamportClock.TimestampList, reqMessage.Timestamp)
 	}
+	
 	sort.Ints(LocalLamportClock.TimestampList)
 
-	//LocalLamportClock.Mutex.Unlock()
 	LocalMessageQueue.Mutex.Lock()
 	LocalMessageQueue.Messages[reqMessage.Timestamp] = append(LocalMessageQueue.Messages[reqMessage.Timestamp], reqMessage)
 	LocalMessageQueue.Mutex.Unlock()
@@ -81,10 +78,9 @@ func (m MessageServer) MessageMulticast(ctx context.Context, in *msg.MessageShar
 
 }
 func (m *MessageQueue) CheckMessageReadinness(message MessageData) {
-	// all messages are stored in the queue waiting to be released to the ready map
+	// all messages are stored in the queue waiting to be released to the ready slice
 	// Readiness Indicators
-	// For a message being ready to be ready requires that the number of messages waiting in the queue is higher or equals to 3
-	// The tolerance of 3 messages gives time for the out of order messages to be processed and sorted in time to be displayed.
+	// tolerance of 3 messages to give time for the out of order messages to be processed and sorted in time to be displayed.
 
 	LocalLamportClock.Mutex.Lock()
 	if len(LocalLamportClock.TimestampList) >= 3 {
@@ -94,7 +90,7 @@ func (m *MessageQueue) CheckMessageReadinness(message MessageData) {
 		}
 		m.Mutex.Unlock()
 
-		// add the previous ts slice to the MessageReady map
+		// add message to ready list
 		LocalMessageReady.Mutex.Lock()
 		LocalMessageReady.Messages = m.Messages[LocalLamportClock.TimestampList[0]]
 		LocalMessageReady.Mutex.Unlock()
@@ -103,14 +99,11 @@ func (m *MessageQueue) CheckMessageReadinness(message MessageData) {
 	}
 	LocalLamportClock.Mutex.Unlock()
 
-	// 2
 }
 func (m *MessageQueue) MessageMulticastTrasmission(message MessageData) {
-
-	//message.LogicalCLock = network.LocalTimeVector.LogicalCLock
 	message.Timestamp = LocalLamportClock.Timestamp
+	log.Printf(config.Cyan+"New Message generated Timestamp:%d Address:%s Data:%s\n"+config.Reset, message.Timestamp, message.Sender, message.Data)
 
-	fmt.Printf("\nNew Message generated ts:%d sender:%s, data:%s\n", message.Timestamp, message.Sender, message.Data)
 	m.Mutex.Lock()
 	m.Messages[message.Timestamp] = append(m.Messages[message.Timestamp], message)
 
@@ -196,14 +189,14 @@ func (m *MessageQueue) SetMessageOrder(ts int) {
 
 func (m *MessageReady) ShowResults() {
 	//create log file to save messages
-	file, _ := os.Create("messages.txt")
+	file, _ := os.Create(fmt.Sprintf("messages-%s.txt", network.LocalNode.ID))
 	defer file.Close()
 
 	for {
 		m.Mutex.Lock()
 		if len(m.Messages) > 0 {
 			for i := range m.Messages {
-				log.Printf(config.Red+"Current Message: Timestamp:%d SenderAddress:%s Data:%s\n"+config.Reset, m.Messages[i].Timestamp, m.Messages[i].Sender, m.Messages[i].Data)
+				log.Printf(config.Red+"Processing Message: Timestamp:%d SenderAddress:%s Data:%s\n"+config.Reset, m.Messages[i].Timestamp, m.Messages[i].Sender, m.Messages[i].Data)
 				//save messages on a log file
 				log := fmt.Sprintf("Message: Timestamp:%d SenderAddress:%s Data:%s\n", m.Messages[i].Timestamp, m.Messages[i].Sender, m.Messages[i].Data)
 				file.WriteString(log)

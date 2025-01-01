@@ -1,7 +1,7 @@
 package network
 
 import (
-	ntw "chatapp/network/proto"
+	ntw "GoMulticastChatApp/network/proto"
 	"flag"
 	"log"
 	"net"

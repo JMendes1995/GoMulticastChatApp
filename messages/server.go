@@ -1,17 +1,14 @@
 package messages
 
 import (
-	msg "chatapp/messages/proto"
-	"chatapp/network"
+	msg "GoMulticastChatApp/messages/proto"
+	"GoMulticastChatApp/network"
 	"flag"
 	"log"
 	"net"
 
 	"google.golang.org/grpc"
 )
-
-
-
 
 func Server() {
 	flag.Parse()

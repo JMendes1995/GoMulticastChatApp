@@ -1,8 +1,8 @@
 package main
 
 import (
-	"chatapp/messages"
-	"chatapp/network"
+	"GoMulticastChatApp/messages"
+	"GoMulticastChatApp/network"
 	"encoding/json"
 	"log"
 	"os"
@@ -38,9 +38,7 @@ func main() {
 		go network.LocalNode.NetworkClient(network.LocalRouteTable.Nodes[id])
 	}
 
-	//go messages.LocalMessages.MesageMulticastEventGenerator(words)
 	go messages.LocalMessageQueue.MesageMulticastEventGenerator(words)
 	go messages.LocalMessageReady.ShowResults()
-	//go messages.LocalMessages.ShowResults()
 	select {}
 }

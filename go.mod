@@ -1,4 +1,4 @@
-module chatapp
+module GoMulticastChatApp
 
 go 1.23.4
 

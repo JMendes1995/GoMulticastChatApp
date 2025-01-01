@@ -1,7 +1,7 @@
 package messages
 
 import (
-	msg "chatapp/messages/proto"
+	msg "GoMulticastChatApp/messages/proto"
 	"context"
 	"encoding/json"
 	"log"

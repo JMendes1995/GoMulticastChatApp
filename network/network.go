@@ -7,7 +7,7 @@ import (
 	"os"
 	"sync"
 
-	ntw "chatapp/network/proto"
+	ntw "GoMulticastChatApp/network/proto"
 )
 
 // 1. Setup the routing table with the node list passed via input

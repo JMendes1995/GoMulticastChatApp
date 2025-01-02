@@ -16,8 +16,7 @@ func main() {
 		Status: "offline",
 	}
 	messages.LocalLamportClock.Timestamp = 0
-	messages.LocalMessageQueue.Messages = make(map[int][]messages.MessageData)
-
+	messages.LocalMessageQueue.Messages = make(map[int][]messages.MessageCommited)
 	nodesJson, _ := os.ReadFile("nodes.json")
 
 	network.LocalRouteTable.BuildRoutingTable(nodesJson)
@@ -39,6 +38,6 @@ func main() {
 	}
 
 	go messages.LocalMessageQueue.MesageMulticastEventGenerator(words)
-	go messages.LocalMessageReady.ShowResults()
+	go messages.LocalMessageQueue.ShowResults()
 	select {}
 }

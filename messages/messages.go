@@ -4,18 +4,13 @@ import (
 	"GoMulticastChatApp/config"
 	msg "GoMulticastChatApp/messages/proto"
 	"GoMulticastChatApp/network"
-	"GoMulticastChatApp/poisson"
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
-	"slices"
 	"sort"
 	"sync"
 	"time"
-
-	"math/rand"
 )
 
 type Words struct {
@@ -34,13 +29,19 @@ type LamportClock struct {
 }
 
 type MessageQueue struct {
-	Messages map[int][]MessageData
+	Messages map[int][]MessageCommited
 	Mutex    sync.Mutex
 }
 
-type MessageReady struct {
-	Messages []MessageData
-	Mutex    sync.Mutex
+type MessageCommited struct {
+	Message  MessageData
+	Commit   bool
+	AckNodes []string
+}
+
+type MessageCommitData struct {
+	Sender  string
+	Message MessageData
 }
 
 type MessageServer struct {
@@ -52,159 +53,139 @@ const Port = ":50001"
 var (
 	LocalLamportClock LamportClock
 	LocalMessageQueue MessageQueue
-	LocalMessageReady MessageReady
 )
 
 // Grpc function to process the message shared from other nodes.
+// When a node reciveds this message it means that a new message was generated from other nodes
+// the new message is added to the local message queue queue
+// the logical clock is incremented  max(recived message timestamp, current logical clock) + 1
 func (m MessageServer) MessageMulticast(ctx context.Context, in *msg.MessageSharing) (*msg.MessageResponse, error) {
 	reqMessage := MessageJsonUnmarshal(in.GetMessage())
 	log.Printf(config.Yellow+"Recived message with Timestamp:%d Address:%s Data:%s\n"+config.Reset, reqMessage.Timestamp, reqMessage.Sender, reqMessage.Data)
 
-	if !slices.Contains((LocalLamportClock.TimestampList), reqMessage.Timestamp) {
-		LocalLamportClock.TimestampList = append(LocalLamportClock.TimestampList, reqMessage.Timestamp)
-	}
-	
-	sort.Ints(LocalLamportClock.TimestampList)
-
-	LocalMessageQueue.Mutex.Lock()
-	LocalMessageQueue.Messages[reqMessage.Timestamp] = append(LocalMessageQueue.Messages[reqMessage.Timestamp], reqMessage)
-	LocalMessageQueue.Mutex.Unlock()
-
-	LocalMessageQueue.CheckMessageReadinness(reqMessage)
-
-	LocalLamportClock.Timestamp = max(reqMessage.Timestamp, LocalLamportClock.Timestamp) + 1
-
-	return &msg.MessageResponse{Result: "Message sent"}, nil
-
-}
-func (m *MessageQueue) CheckMessageReadinness(message MessageData) {
-	// all messages are stored in the queue waiting to be released to the ready slice
-	// Readiness Indicators
-	// tolerance of 3 messages to give time for the out of order messages to be processed and sorted in time to be displayed.
-
 	LocalLamportClock.Mutex.Lock()
-	if len(LocalLamportClock.TimestampList) >= 3 {
-		m.Mutex.Lock()
-		if len(m.Messages[LocalLamportClock.TimestampList[0]]) > 1 {
-			m.SetMessageOrder(LocalLamportClock.TimestampList[0])
-		}
-		m.Mutex.Unlock()
-
-		// add message to ready list
-		LocalMessageReady.Mutex.Lock()
-		LocalMessageReady.Messages = m.Messages[LocalLamportClock.TimestampList[0]]
-		LocalMessageReady.Mutex.Unlock()
-
-		LocalLamportClock.TimestampList = LocalLamportClock.TimestampList[1:]
-	}
+	LocalLamportClock.Timestamp = max(reqMessage.Timestamp, LocalLamportClock.Timestamp) + 1
+	LocalLamportClock.TimestampList = append(LocalLamportClock.TimestampList, reqMessage.Timestamp)
 	LocalLamportClock.Mutex.Unlock()
 
+	LocalMessageQueue.Mutex.Lock()
+
+	LocalMessageQueue.Messages[reqMessage.Timestamp] = append(LocalMessageQueue.Messages[reqMessage.Timestamp], MessageCommited{
+		Message: reqMessage,
+		Commit:  false,
+	})
+
+	LocalMessageQueue.Mutex.Unlock()
+
+	return &msg.MessageResponse{Result: "Message sent"}, nil
 }
+
+// Grpc function to handle the commit messages
+// When a node recives this commit message it automatically means that this message was delivered to every node in the network and is ready to be process.
+// This is achieved by setting the commit flag to true
+func (m MessageServer) MessageCommitMulticast(ctx context.Context, in *msg.MessageCommitSharing) (*msg.MessageCommitResponse, error) {
+	reqAckMessage := MessageCommitJsonUnmarshal(in.GetMessage())
+	log.Printf(config.Yellow+"Recived Commit from %s with message Timestamp:%d Address:%s Data:%s\n"+config.Reset, reqAckMessage.Sender, reqAckMessage.Message.Timestamp, reqAckMessage.Message.Sender, reqAckMessage.Message.Data)
+
+	LocalMessageQueue.Mutex.Lock()
+	for i := range LocalMessageQueue.Messages[reqAckMessage.Message.Timestamp] {
+		if LocalMessageQueue.Messages[reqAckMessage.Message.Timestamp][i].Message == reqAckMessage.Message {
+			fmt.Printf("Comit completed message ready")
+			LocalMessageQueue.Messages[reqAckMessage.Message.Timestamp][i].Commit = true
+		}
+	}
+	LocalMessageQueue.Mutex.Unlock()
+	return &msg.MessageCommitResponse{Result: "Commit sent"}, nil
+}
+
+
+//After the event generator generates a new message it will be transmitter in multicast to every node in the network.
+//After the messege being transmited is required in order to process the message every node recieve a commit message 
+//This commit message is the confirmation tha every node recieved the message and is ok to process (print on the screen)
 func (m *MessageQueue) MessageMulticastTrasmission(message MessageData) {
+	LocalLamportClock.Mutex.Lock()
+	//update the message timestamp with the current logical clock
 	message.Timestamp = LocalLamportClock.Timestamp
+	//add the new message timestamp in a list of every timestamps waiting to be process.
+	LocalLamportClock.TimestampList = append(LocalLamportClock.TimestampList, message.Timestamp)
+	LocalLamportClock.Mutex.Unlock()
+
 	log.Printf(config.Cyan+"New Message generated Timestamp:%d Address:%s Data:%s\n"+config.Reset, message.Timestamp, message.Sender, message.Data)
 
+	// add the generated message to the local queue with the commit flag set to false.
+	// Once the flag commit changes to true it means that the message is ready to be process.
 	m.Mutex.Lock()
-	m.Messages[message.Timestamp] = append(m.Messages[message.Timestamp], message)
-
-	if !slices.Contains((LocalLamportClock.TimestampList), message.Timestamp) {
-		LocalLamportClock.TimestampList = append(LocalLamportClock.TimestampList, message.Timestamp)
-	}
-	sort.Ints(LocalLamportClock.TimestampList)
-
+	m.Messages[message.Timestamp] = append(m.Messages[message.Timestamp], MessageCommited{
+		Message: message,
+		Commit:  false,
+	})
 	m.Mutex.Unlock()
 
 	// send message to online nodes
 	for _, value := range network.LocalRouteTable.Nodes {
 		messageClient(value.Addr, message)
 	}
-
-	//after sending the bleat message insert the message into the ready map
-	LocalMessageQueue.CheckMessageReadinness(message)
 	LocalLamportClock.Timestamp = LocalLamportClock.Timestamp + 1
 
-}
+	// after sending all the messages successfully send an commit message to all nodes
+	// confirming that the message was transmitted and is ready to process. 
+	// This is achieved by sending commit messages to every node to confirm that the transaction was successfull.
+	//
+	ackMsg := MessageCommitData{
+		Sender:  network.LocalNode.Addr,
+		Message: message,
+	}
+	for _, value := range network.LocalRouteTable.Nodes {
+		log.Printf(config.Cyan+"Sending Commit message to node %s for message {Timestamp: %d, Sender: %s, Data:%s}\n"+config.Reset, value.Addr, message.Timestamp, message.Sender, message.Data)
+		messageAckClient(value.Addr, ackMsg)
+	}
+	m.Mutex.Lock()
 
-func (m *MessageQueue) MesageMulticastEventGenerator(words Words) {
-	// sleep to wait that all the nodes are sync
-	time.Sleep(time.Second * 20)
-	seed := time.Now().UnixNano()
-	rng := rand.New(rand.NewSource(seed))
-	lambda := 60.0 // rate of 2 updates per minute
-	poissonProcess := poisson.PoissonProcess{Lambda: lambda, Rng: rng}
-	totalRequests := 0
-	t := 1 // current minute
-	for {
-		currentTime := 0.0
-		previousTime := 0.0
-
-		nRequests := poissonProcess.PoissonRandom()
-		log.Printf(config.Green+"Minute:%d Nrequests:%d"+config.Reset, t, nRequests)
-		for i := 1; i <= nRequests; i++ {
-			totalRequests++
-
-			// get the time for the next request to be executed
-			interArrivalTime := poissonProcess.ExponentialRandom()
-			previousTime = currentTime
-			currentTime = (interArrivalTime * 60) + currentTime
-			//log.Printf(config.Green+"Request %d at %f seconds\n"+config.Reset, i, currentTime)
-			//log.Printf(config.Green+"Sleep %.5f seconds...\n"+config.Reset, float64(currentTime-previousTime))
-			delta := time.Duration(currentTime-previousTime) * time.Second
-			time.Sleep(delta)
-			rword := words.Words[rand.Intn(len(words.Words))]
-
-			newMessage := MessageData{
-				Data:   rword,
-				Sender: network.LocalNode.Addr + Port,
-			}
-			m.MessageMulticastTrasmission(newMessage)
-
-			if i == nRequests && currentTime < 60 {
-				log.Printf(config.Green+"Requests for the minute %d endend before finishing the 60s.\nWaiting %f seconds to complete the cycle of 60s....\n"+config.Reset, t, float64(60-currentTime))
-				time.Sleep((time.Duration(60-currentTime) * time.Second))
-			}
+	// after commiting the message set the commit flag to try to mark the message as ready to process.
+	for i := range m.Messages[message.Timestamp] {
+		if m.Messages[message.Timestamp][i].Message == message {
+			fmt.Printf("Comit completed message ready")
+			m.Messages[message.Timestamp][i].Commit = true
 		}
-		fmt.Println()
-		log.Printf(config.Green+"Statistics: Total requests: %d Minutes spent: %d rate:%f\n"+config.Reset, totalRequests, t, float64(totalRequests)/float64(t))
-		t++
 	}
+	m.Mutex.Unlock()
 }
 
-func MessageJsonUnmarshal(data string) MessageData {
-	var n MessageData
-	err := json.Unmarshal([]byte(data), &n)
-	if err != nil {
-		log.Fatalf("Error in Unmarshalling Message: %s", err)
-	}
-	return n
-}
-
-func (m *MessageQueue) SetMessageOrder(ts int) {
-	if len(m.Messages[ts]) > 1 {
-		sort.Slice(m.Messages[ts], func(i, j int) bool {
-			return m.Messages[ts][i].Sender < m.Messages[ts][j].Sender
-		})
-	}
-}
-
-func (m *MessageReady) ShowResults() {
+// function that is always looking at the oldest message in the queue.
+// When the oldest message was the commit flag to true it is displayed and saved into a log file.
+// when concurent messages occount both are added to the localqueue and ordered by the the address of the noded that generated the message.
+func (m *MessageQueue) ShowResults() {
 	//create log file to save messages
 	file, _ := os.Create(fmt.Sprintf("messages-%s.txt", network.LocalNode.ID))
 	defer file.Close()
 
 	for {
-		m.Mutex.Lock()
-		if len(m.Messages) > 0 {
-			for i := range m.Messages {
-				log.Printf(config.Red+"Processing Message: Timestamp:%d SenderAddress:%s Data:%s\n"+config.Reset, m.Messages[i].Timestamp, m.Messages[i].Sender, m.Messages[i].Data)
-				//save messages on a log file
-				log := fmt.Sprintf("Message: Timestamp:%d SenderAddress:%s Data:%s\n", m.Messages[i].Timestamp, m.Messages[i].Sender, m.Messages[i].Data)
-				file.WriteString(log)
+		if len(LocalLamportClock.TimestampList) > 0 {
+			sort.Ints(LocalLamportClock.TimestampList)
+			m.Mutex.Lock()
+			if len(m.Messages[LocalLamportClock.TimestampList[0]]) > 0 {
+				m.SortMessages(LocalLamportClock.TimestampList[0])
+				if m.Messages[LocalLamportClock.TimestampList[0]][0].Commit == true {
 
+					log.Printf(config.Red+"Processing Message: Timestamp:%d SenderAddress:%s Data:%s\n"+config.Reset,
+						m.Messages[LocalLamportClock.TimestampList[0]][0].Message.Timestamp,
+						m.Messages[LocalLamportClock.TimestampList[0]][0].Message.Sender,
+						m.Messages[LocalLamportClock.TimestampList[0]][0].Message.Data)
+					//save messages on a log file
+					log := fmt.Sprintf("Message: Timestamp:%d SenderAddress:%s Data:%s\n",
+						m.Messages[LocalLamportClock.TimestampList[0]][0].Message.Timestamp,
+						m.Messages[LocalLamportClock.TimestampList[0]][0].Message.Sender,
+						m.Messages[LocalLamportClock.TimestampList[0]][0].Message.Data)
+					file.WriteString(log)
+					m.Messages[LocalLamportClock.TimestampList[0]] = m.Messages[LocalLamportClock.TimestampList[0]][min(len(m.Messages[LocalLamportClock.TimestampList[0]]), 1):]
+				}
+
+			} else {
+				LocalLamportClock.TimestampList = LocalLamportClock.TimestampList[1:]
 			}
-			m.Messages = nil
+			m.Mutex.Unlock()
 		}
+		time.Sleep(time.Millisecond * 50)
 
-		m.Mutex.Unlock()
 	}
 }

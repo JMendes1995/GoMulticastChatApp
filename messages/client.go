@@ -24,3 +24,17 @@ func messageClient(addr string, message MessageData) {
 	messageJson, _ := json.Marshal(message)
 	c.MessageMulticast(ctx, &msg.MessageSharing{Message: string(messageJson)})
 }
+
+func messageAckClient(addr string, message MessageCommitData) {
+	conn, err := grpc.NewClient(addr+Port, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("Error connecting to server %s", err)
+	}
+
+	c := msg.NewMessageClient(conn)
+	defer conn.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	messageJson, _ := json.Marshal(message)
+	c.MessageCommitMulticast(ctx, &msg.MessageCommitSharing{Message: string(messageJson)})
+}

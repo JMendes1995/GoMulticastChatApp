@@ -3,14 +3,24 @@ option go_package = "./";
 
 service Message {
     rpc MessageMulticast (MessageSharing) returns (MessageResponse){}
+    rpc MessageCommitMulticast (MessageCommitSharing) returns (MessageCommitResponse){}
 }
 
-//Message to be shared with the neighbours 
+//Message to be shared with the neighbours
 message MessageSharing {
     string message = 1;
 }
 
 //Response message
 message MessageResponse {
+    string result = 1;
+}
+//Message to be shared with the neighbours
+message MessageCommitSharing {
+    string message = 1;
+}
+
+//Response message
+message MessageCommitResponse {
     string result = 1;
 }

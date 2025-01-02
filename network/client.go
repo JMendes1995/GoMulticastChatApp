@@ -37,7 +37,7 @@ func (n *Node) NetworkClient(peer Node) {
 		} else {
 			log.Printf(config.Yellow+"Peer not ready %s Remaining connection attempts:%d"+config.Reset, peer.Addr+Port, maxConnAttempts-i)
 		}
-		time.Sleep(time.Second * 10)
+		time.Sleep(time.Second * 5)
 	}
 
 	// after trying 3 times giving up on updating status

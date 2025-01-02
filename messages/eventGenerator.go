@@ -12,7 +12,7 @@ import (
 
 func (m *MessageQueue) MesageMulticastEventGenerator(words Words) {
 	// sleep to wait that all the nodes are sync
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * 20)
 	seed := time.Now().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
 	lambda := 60.0 // rate of 2 updates per minute

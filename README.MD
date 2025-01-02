@@ -10,7 +10,7 @@
     - [Docker](#docker)
       - [Clean up docker environment](#clean-up-docker-environment)
 
-This project is a Basic Chat Application Using Totally-Ordered Multicast usig Go programming language for the scope of Distributed systems Class final project. This project 
+This project is a Basic Chat Application Using Totally-Ordered Multicast usig Go programming language for the scope of Distributed systems Class final project.
 
 ### Requirements
 * Create a network of 6 peers (p1 to p6) each in a different machine (m1 to m6) with the

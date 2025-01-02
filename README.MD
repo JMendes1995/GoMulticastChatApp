@@ -4,6 +4,11 @@
 
 - [GoMulticastChatApp](#gomulticastchatapp)
   - [Requirements](#requirements)
+  - [How to build the project](#how-to-build-the-project)
+  - [How to execute the project](#how-to-execute-the-project)
+    - [Execution in physical nodes](#execution-in-physical-nodes)
+    - [Docker](#docker)
+      - [Clean up docker environment](#clean-up-docker-environment)
 
 This project is a Basic Chat Application Using Totally-Ordered Multicast usig Go programming language for the scope of Distributed systems Class final project. This project 
 

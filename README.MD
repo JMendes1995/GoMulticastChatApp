@@ -44,7 +44,6 @@ $ go build
 ```
 
 ### How to execute the project
-In the developent phase of the project it was used a docker environment where the nodes and networks setup where virtualize to create a more seamlessly envorinment as possible.
 
 To execute the project there is 2 possible ways.
 1. Execute the code in phsical nodes

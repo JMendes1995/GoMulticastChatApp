@@ -1,4 +1,5 @@
 # GoMulticastChatApp
+Basic Chat Application Using Totally-Ordered Multicast usig Go programming language for the scope of Distributed systems Class final project.
 
 # Table Of Contents
 - [GoMulticastChatApp](#gomulticastchatapp)
@@ -16,7 +17,6 @@
             * [Commit message by the message sender.](#commit-message-by-the-message-sender-1)
             * [Concurrent messages.](#concurrent-messages)
 
-This project is a Basic Chat Application Using Totally-Ordered Multicast usig Go programming language for the scope of Distributed systems Class final project.
 
 ### Implementation Requirements
 * Create a network of 6 peers (p1 to p6) each in a different machine (m1 to m6) with the

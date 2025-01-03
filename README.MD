@@ -16,6 +16,7 @@ Basic Chat Application Using Totally-Ordered Multicast usig Go programming langu
             * [Commit message by the message sender.](#commit-message-by-the-message-sender)
             * [Commit message by the message sender.](#commit-message-by-the-message-sender-1)
             * [Concurrent messages.](#concurrent-messages)
+    - [Execution in physical nodes](#execution-in-physical-nodes)
 
 
 ### Implementation Requirements

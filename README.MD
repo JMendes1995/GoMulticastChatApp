@@ -2,21 +2,20 @@
 Basic Chat Application Using Totally-Ordered Multicast usig Go programming language for the scope of Distributed systems Class final project.
 
 # Table Of Contents
+
 - [GoMulticastChatApp](#gomulticastchatapp)
-- [Table Of Contents](#table-of-contents)
-      + [Implementation Requirements](#implementation-requirements)
-      + [How to build the project](#how-to-build-the-project)
-      + [How to execute the project](#how-to-execute-the-project)
-         - [Execution in physical nodes](#execution-in-physical-nodes)
-         - [Docker](#docker)
-            * [Clean up docker environment](#clean-up-docker-environment)
-      + [Result intrepertation](#result-intrepertation)
-            * [Server startup and Peer Registration](#server-startup-and-peer-registration)
-            * [Event generation](#event-generation)
-            * [Commit message by the message sender.](#commit-message-by-the-message-sender)
-            * [Commit message by the message sender.](#commit-message-by-the-message-sender-1)
-            * [Concurrent messages.](#concurrent-messages)
+  - [Implementation Requirements](#implementation-requirements)
+  - [How to build the project](#how-to-build-the-project)
+  - [How to execute the project](#how-to-execute-the-project)
     - [Execution in physical nodes](#execution-in-physical-nodes)
+    - [Docker](#docker)
+      - [Clean up docker environment](#clean-up-docker-environment)
+    - [Result intrepertation](#result-intrepertation)
+      - [Server startup and Peer Registration](#server-startup-and-peer-registration)
+      - [Event generation](#event-generation)
+      - [Commit message by the message sender.](#commit-message-by-the-message-sender)
+      - [Commit message by the message sender.](#commit-message-by-the-message-sender)
+      - [Concurrent messages.](#concurrent-messages)
 
 
 ### Implementation Requirements

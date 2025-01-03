@@ -4,14 +4,36 @@ import (
 	"GoMulticastChatApp/messages"
 	"GoMulticastChatApp/network"
 	"encoding/json"
+	"flag"
+	"fmt"
 	"log"
 	"os"
 )
 
+func cli() string {
+	// Define flags
+	id := flag.String("id", "", "Specify the Local Node ID")
+
+	help := flag.Bool("help", false, "help")
+
+	// Parse flags
+	flag.Parse()
+
+	if *help {
+		fmt.Println("Usage: cli [options]")
+		flag.PrintDefaults()
+		os.Exit(0)
+	}
+
+	return *id
+}
+
 func main() {
+	id := cli()
+	network.LocalID = id
 	localAddr, _ := network.GetLocalAddr()
 	network.LocalNode = network.Node{
-		ID:     network.LocalID,
+		ID:     id,
 		Addr:   localAddr,
 		Status: "offline",
 	}

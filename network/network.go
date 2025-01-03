@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"log"
-	"os"
 	"sync"
 
 	ntw "GoMulticastChatApp/network/proto"
@@ -35,7 +34,7 @@ type NetworkServer struct {
 const Port = ":50000"
 
 var (
-	LocalID         = os.Getenv("ID")
+	LocalID         string
 	LocalNode       Node
 	LocalRouteTable RoutingTable
 )

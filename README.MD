@@ -1,18 +1,24 @@
 # GoMulticastChatApp
 
 # Table Of Contents
-
 - [GoMulticastChatApp](#gomulticastchatapp)
-  - [Requirements](#requirements)
-  - [How to build the project](#how-to-build-the-project)
-  - [How to execute the project](#how-to-execute-the-project)
-    - [Execution in physical nodes](#execution-in-physical-nodes)
-    - [Docker](#docker)
-      - [Clean up docker environment](#clean-up-docker-environment)
+- [Table Of Contents](#table-of-contents)
+      + [Implementation Requirements](#implementation-requirements)
+      + [How to build the project](#how-to-build-the-project)
+      + [How to execute the project](#how-to-execute-the-project)
+         - [Execution in physical nodes](#execution-in-physical-nodes)
+         - [Docker](#docker)
+            * [Clean up docker environment](#clean-up-docker-environment)
+      + [Result intrepertation](#result-intrepertation)
+            * [Server startup and Peer Registration](#server-startup-and-peer-registration)
+            * [Event generation](#event-generation)
+            * [Commit message by the message sender.](#commit-message-by-the-message-sender)
+            * [Commit message by the message sender.](#commit-message-by-the-message-sender-1)
+            * [Concurrent messages.](#concurrent-messages)
 
 This project is a Basic Chat Application Using Totally-Ordered Multicast usig Go programming language for the scope of Distributed systems Class final project.
 
-### Requirements
+### Implementation Requirements
 * Create a network of 6 peers (p1 to p6) each in a different machine (m1 to m6) with the
 topology shown in the figure above. Each peer has a table with the IPs of all the other
 peers/machines.
@@ -51,12 +57,12 @@ To execute the project there is 2 possible ways.
 
 #### Execution in physical nodes
 Before executing the project, is required to pull the source code into the nodes that will be part of the network.
-Furthermore is require to update the **nodes.json** file located at the root of the project with the node **address** and **id** of each node. 
+Furthermore is require to update the **nodes.json** file located at the root of the project with the node **address** and **id** of each node.
 Finnaly, to execute the project is also required to execute the following command in each node.
 
 ```bash
 $ cd GoMulticastChatApp
-$ ./GoMulticastChatApp-linux 
+$ ./GoMulticastChatApp-linux
 ```
 
 #### Docker
@@ -69,27 +75,27 @@ $ docker-compose -d
 ```
 2. In different windows, enter in each container.
 ```bash
-$ docker exec -it gomulticastchatapp-peer1-1 bash 
+$ docker exec -it gomulticastchatapp-peer1-1 bash
 ```
 ```bash
-$ docker exec -it gomulticastchatapp-peer2-1 bash 
+$ docker exec -it gomulticastchatapp-peer2-1 bash
 ```
 ```bash
-$ docker exec -it gomulticastchatapp-peer3-1 bash 
+$ docker exec -it gomulticastchatapp-peer3-1 bash
 ```
 ```bash
-$ docker exec -it gomulticastchatapp-peer4-1 bash 
+$ docker exec -it gomulticastchatapp-peer4-1 bash
 ```
 ```bash
-$ docker exec -it gomulticastchatapp-peer5-1 bash 
+$ docker exec -it gomulticastchatapp-peer5-1 bash
 ```
 ```bash
-$ docker exec -it gomulticastchatapp-peer6-1 bash 
+$ docker exec -it gomulticastchatapp-peer6-1 bash
 ```
 
 3. Execute binary in every container
 ```bash
-$ ./GoMulticastChatApp-linux 
+$ ./GoMulticastChatApp-linux
 ```
 ##### Clean up docker environment
 ```bash
@@ -122,14 +128,14 @@ Nodes which are online state are placed in a routing table and if a node stops r
 ##### Event generation
 After update the peer status in the local routing table, The event generator starts producing messages at a rate of 1 message per second following a Poisson distribution.
 Each new message generated will increment the logical clock (Lamport clock) by 1, stores in a local queue and transmit the message to other peers in multicast using gRPC.
-With the new message generated the node will distribute the message in a multicasst 
+With the new message generated the node will distribute the message in a multicasst
 ```bash
 2025/01/03 09:42:11 Minute:1 Nrequests:58
 2025/01/03 09:42:11 New Message generated Timestamp:0 Address:192.168.0.142:50001 Data:Knapsack
 ```
 
 ##### Commit message by the message sender.
-For every node know that a message is ready to be processed (display in the screen), Is required to send confirmation messages confirming that a message was successfully transmitted. Therefore, The owner of the generated message 
+For every node know that a message is ready to be processed (display in the screen), Is required to send confirmation messages confirming that a message was successfully transmitted. Therefore, The owner of the generated message
 is responsible to generate and distribute commit messages peer peer for each message that generates. This mechanism ensures that only messages that are successfully sent and confirmed by the message ower can be process.
 Using commit messages instead of ACK messages by the peers broacasted to the entire network reduces the number of messages per message.
 In this approach will result per message (1+nNodes) messages. On the other hand if we used ACK messages broadcasted to the internet we would have (1 + nNodes²) which is less scalable in larger networks and in netowrks with high throuput.

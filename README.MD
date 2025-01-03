@@ -62,7 +62,12 @@ Finnaly, to execute the project is also required to execute the following comman
 
 ```bash
 $ cd GoMulticastChatApp
-$ ./GoMulticastChatApp-linux
+$ ./GoMulticastChatApp-linux --id m1
+$ ./GoMulticastChatApp-linux --id m2
+$ ./GoMulticastChatApp-linux --id m3
+$ ./GoMulticastChatApp-linux --id m4
+$ ./GoMulticastChatApp-linux --id m5
+$ ./GoMulticastChatApp-linux --id m6
 ```
 
 #### Docker
@@ -95,7 +100,12 @@ $ docker exec -it gomulticastchatapp-peer6-1 bash
 
 3. Execute binary in every container
 ```bash
-$ ./GoMulticastChatApp-linux
+$ ./GoMulticastChatApp-linux --id m1
+$ ./GoMulticastChatApp-linux --id m2
+$ ./GoMulticastChatApp-linux --id m3
+$ ./GoMulticastChatApp-linux --id m4
+$ ./GoMulticastChatApp-linux --id m5
+$ ./GoMulticastChatApp-linux --id m6
 ```
 ##### Clean up docker environment
 ```bash

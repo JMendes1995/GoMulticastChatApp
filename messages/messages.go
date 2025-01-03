@@ -90,7 +90,6 @@ func (m MessageServer) MessageCommitMulticast(ctx context.Context, in *msg.Messa
 	LocalMessageQueue.Mutex.Lock()
 	for i := range LocalMessageQueue.Messages[reqAckMessage.Message.Timestamp] {
 		if LocalMessageQueue.Messages[reqAckMessage.Message.Timestamp][i].Message == reqAckMessage.Message {
-			fmt.Printf("Comit completed message ready")
 			LocalMessageQueue.Messages[reqAckMessage.Message.Timestamp][i].Commit = true
 		}
 	}

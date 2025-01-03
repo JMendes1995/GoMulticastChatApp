@@ -97,3 +97,65 @@ $ docker compose down && docker compose rm && docker rmi -f $(docker images -aq)
 ```
 
 
+### Result intrepertation
+Note: The list of generated messages is at the node in a file named messages-<nodeID> in the root directory of the project.
+
+##### Server startup and Peer Registration
+Nodes initially are in a offline state. Therefore, before sending messages between them, nodes start by sending a message to anounce themselves to the network resulting in state change from **offline** to **Online** state.
+Nodes which are online state are placed in a routing table and if a node stops responding it will result in a removal from the routing table.
+
+```bash
+2025/01/03 09:42:01 Network server P2P server listening at 192.168.0.142:50000
+2025/01/03 09:42:01 Message server listening at 192.168.0.142:50001
+2025/01/03 09:42:01 Peer not ready 192.168.0.144:50000 Remaining connection attempts:3
+2025/01/03 09:42:01 Peer not ready 192.168.0.143:50000 Remaining connection attempts:3
+2025/01/03 09:42:01 Peer not ready 192.168.0.147:50000 Remaining connection attempts:3
+2025/01/03 09:42:01 Peer not ready 192.168.0.146:50000 Remaining connection attempts:3
+2025/01/03 09:42:01 Peer not ready 192.168.0.145:50000 Remaining connection attempts:3
+2025/01/03 09:42:06 192.168.0.146:50000 result:"Node status changed"
+2025/01/03 09:42:06 192.168.0.144:50000 result:"Node status changed"
+2025/01/03 09:42:06 192.168.0.145:50000 result:"Node status changed"
+2025/01/03 09:42:06 192.168.0.147:50000 result:"Node status changed"
+2025/01/03 09:42:06 192.168.0.143:50000 result:"Node status changed"
+```
+
+##### Event generation
+After update the peer status in the local routing table, The event generator starts producing messages at a rate of 1 message per second following a Poisson distribution.
+Each new message generated will increment the logical clock (Lamport clock) by 1, stores in a local queue and transmit the message to other peers in multicast using gRPC.
+With the new message generated the node will distribute the message in a multicasst 
+```bash
+2025/01/03 09:42:11 Minute:1 Nrequests:58
+2025/01/03 09:42:11 New Message generated Timestamp:0 Address:192.168.0.142:50001 Data:Knapsack
+```
+
+##### Commit message by the message sender.
+For every node know that a message is ready to be processed (display in the screen), Is required to send confirmation messages confirming that a message was successfully transmitted. Therefore, The owner of the generated message 
+is responsible to generate and distribute commit messages peer peer for each message that generates. This mechanism ensures that only messages that are successfully sent and confirmed by the message ower can be process.
+Using commit messages instead of ACK messages by the peers broacasted to the entire network reduces the number of messages per message.
+In this approach will result per message (1+nNodes) messages. On the other hand if we used ACK messages broadcasted to the internet we would have (1 + nNodes²) which is less scalable in larger networks and in netowrks with high throuput.
+
+```bash
+2025/01/03 09:42:11 Sending Commit message to node 192.168.0.146 for message {Timestamp: 0, Sender: 192.168.0.142:50001, Data:Knapsack}
+2025/01/03 09:42:11 Sending Commit message to node 192.168.0.147 for message {Timestamp: 0, Sender: 192.168.0.142:50001, Data:Knapsack}
+2025/01/03 09:42:11 Sending Commit message to node 192.168.0.143 for message {Timestamp: 0, Sender: 192.168.0.142:50001, Data:Knapsack}
+2025/01/03 09:42:11 Sending Commit message to node 192.168.0.144 for message {Timestamp: 0, Sender: 192.168.0.142:50001, Data:Knapsack}
+2025/01/03 09:42:11 Sending Commit message to node 192.168.0.145 for message {Timestamp: 0, Sender: 192.168.0.142:50001, Data:Knapsack}
+2025/01/03 09:42:11 Processing Message: Timestamp:0 SenderAddress:192.168.0.142:50001 Data:Knapsack
+```
+
+##### Commit message by the message sender.
+When a node recives a new message, it is inserted in the local queue and awaits for the commit message from the message owner. Once the commit message arrives, the node marks the message as commited and pushes the message to a message ready map which is regurarly checked to be process.
+```bash
+2025/01/03 09:42:11 Recived message with Timestamp:1 Address:192.168.0.143:50001 Data:Jelly
+2025/01/03 09:42:11 Recived Commit from 192.168.0.143 with message Timestamp:1 Address:192.168.0.143:50001 Data:Jelly
+2025/01/03 09:42:11 Processing Message: Timestamp:1 SenderAddress:192.168.0.143:50001 Data:Jelly
+```
+
+##### Concurrent messages.
+In Network where every node is competing for resouces which means sending messages to each other, concurent messages might occour. Therefore, In a Tottaly order multicast algorithm is required that all messages have the same order in every node.
+Although exists mechanisms that allow clock syncronization, namely the lamport clocks, this does not prevent entirely the generation of concurrent messages. Thus, was implemented a tie-break scenario which will sort concurrent messages by the address of the sender before the message being process by the node. Thereby, all nodes will process the same message.
+
+```bash
+2025/01/03 09:42:11 Recived message with Timestamp:1 Address:192.168.0.142:50001 Data:Jelly
+2025/01/03 09:42:11 Recived message with Timestamp:1 Address:192.168.0.143:50001 Data:Jelly
+```
